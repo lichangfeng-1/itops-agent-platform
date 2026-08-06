@@ -3,9 +3,26 @@
 # Build: docker build -f docker/Dockerfile.frontend -t itops-frontend:latest .
 
 # ============================================================
+# Build-time arguments (overridable via --build-arg)
+# ============================================================
+ARG NPM_REGISTRY=https://registry.npmmirror.com
+ARG HTTP_PROXY=
+ARG HTTPS_PROXY=
+ARG NO_PROXY=localhost,127.0.0.1
+
+# ============================================================
 # Stage 1: Builder
 # ============================================================
 FROM node:20.19.5-alpine AS builder
+
+ARG NPM_REGISTRY
+ARG HTTP_PROXY
+ARG HTTPS_PROXY
+ARG NO_PROXY
+
+ENV http_proxy=${HTTP_PROXY} \
+    https_proxy=${HTTPS_PROXY} \
+    no_proxy=${NO_PROXY}
 
 WORKDIR /app
 
@@ -16,7 +33,9 @@ ENV npm_config_cache=/app/.npm-cache
 COPY frontend/package.json frontend/package-lock.json ./
 
 # Install dependencies with cache optimization
+# Use npmmirror for China; override with --build-arg NPM_REGISTRY= for other mirrors/proxies
 RUN --mount=type=cache,target=/app/.npm-cache \
+    if [ -n "$NPM_REGISTRY" ]; then npm config set registry "$NPM_REGISTRY"; fi && \
     npm ci --prefer-offline --no-audit --no-fund
 
 # Copy source code

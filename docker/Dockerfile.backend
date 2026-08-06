@@ -3,13 +3,38 @@
 # Build: docker build -f docker/Dockerfile.backend -t itops-backend:latest .
 
 # ============================================================
+# Build-time arguments (overridable via --build-arg)
+# ============================================================
+# APT mirror for China users; pass empty string to keep Debian defaults
+#   docker build --build-arg APT_MIRROR= -f docker/Dockerfile.backend .
+# Enterprise/intranet environments can set a proxy or use a local mirror:
+#   docker build --build-arg HTTP_PROXY=http://proxy:8080 --build-arg HTTPS_PROXY=http://proxy:8080 \
+#                --build-arg APT_MIRROR= -f docker/Dockerfile.backend .
+ARG APT_MIRROR=mirrors.aliyun.com
+ARG HTTP_PROXY=
+ARG HTTPS_PROXY=
+ARG NO_PROXY=localhost,127.0.0.1
+
+# ============================================================
 # Stage 1: Builder
 # ============================================================
 FROM node:20.19.5-slim AS builder
 
-# Use Aliyun Debian mirror for faster and more reliable apt access in China
-# Note: Must use HTTP (not HTTPS) because node:20-slim lacks ca-certificates
-RUN sed -i 's|http://deb.debian.org/debian|http://mirrors.aliyun.com/debian|g; s|http://security.debian.org/debian-security|http://mirrors.aliyun.com/debian-security|g' /etc/apt/sources.list.d/debian.sources
+ARG APT_MIRROR
+ARG HTTP_PROXY
+ARG HTTPS_PROXY
+ARG NO_PROXY
+
+ENV http_proxy=${HTTP_PROXY} \
+    https_proxy=${HTTPS_PROXY} \
+    no_proxy=${NO_PROXY}
+
+# Use Aliyun Debian mirror for faster apt access in China.
+# Set APT_MIRROR="" to keep official Debian sources (required in enterprise
+# intranets where mirrors.aliyun.com is unreachable but a proxy is available).
+RUN if [ -n "$APT_MIRROR" ]; then \
+      sed -i "s|http://deb.debian.org/debian|http://${APT_MIRROR}/debian|g; s|http://security.debian.org/debian-security|http://${APT_MIRROR}/debian-security|g" /etc/apt/sources.list.d/debian.sources; \
+    fi
 
 WORKDIR /app
 
@@ -24,7 +49,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY backend/package.json backend/package-lock.json ./
 
 # Install all dependencies (including devDependencies for tsx) and build native modules
-RUN npm ci
+# Use npmmirror for China; override with --build-arg NPM_REGISTRY= for other mirrors/proxies
+ARG NPM_REGISTRY=https://registry.npmmirror.com
+RUN if [ -n "$NPM_REGISTRY" ]; then npm config set registry "$NPM_REGISTRY"; fi && \
+    npm ci
 
 # Copy source code
 COPY backend/ ./
@@ -34,9 +62,20 @@ COPY backend/ ./
 # ============================================================
 FROM node:20.19.5-slim
 
-# Use Aliyun Debian mirror for faster and more reliable apt access in China
-# Note: Must use HTTP (not HTTPS) because node:20-slim lacks ca-certificates
-RUN sed -i 's|http://deb.debian.org/debian|http://mirrors.aliyun.com/debian|g; s|http://security.debian.org/debian-security|http://mirrors.aliyun.com/debian-security|g' /etc/apt/sources.list.d/debian.sources
+ARG APT_MIRROR
+ARG HTTP_PROXY
+ARG HTTPS_PROXY
+ARG NO_PROXY
+
+ENV http_proxy=${HTTP_PROXY} \
+    https_proxy=${HTTPS_PROXY} \
+    no_proxy=${NO_PROXY}
+
+# Use Aliyun Debian mirror for faster apt access in China.
+# Set APT_MIRROR="" to keep official Debian sources (for proxy/intranet builds).
+RUN if [ -n "$APT_MIRROR" ]; then \
+      sed -i "s|http://deb.debian.org/debian|http://${APT_MIRROR}/debian|g; s|http://security.debian.org/debian-security|http://${APT_MIRROR}/debian-security|g" /etc/apt/sources.list.d/debian.sources; \
+    fi
 
 # Labels for public registry (replace with your actual info)
 LABEL maintainer="谭策 <huawei_network@foxmail.com>" \
@@ -54,6 +93,11 @@ WORKDIR /app
 ENV NODE_ENV=production \
     PORT=3001 \
     HOST=0.0.0.0
+
+# Clear build-time proxy settings so they don't leak into the runtime container
+ENV http_proxy= \
+    https_proxy= \
+    no_proxy=
 
 # Install runtime dependencies (SQLite library, Python for dbskiter, gosu for privilege dropping)
 RUN apt-get update && apt-get install -y --no-install-recommends \
