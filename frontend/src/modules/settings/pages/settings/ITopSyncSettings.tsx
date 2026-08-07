@@ -453,7 +453,7 @@ export default function ITopSyncSettings() {
                         <span className="inline-flex items-center gap-1">
                           <Clock className="w-3 h-3" />
                           {new Date(state.last_sync_at).toLocaleString('zh-CN')}
-                          {state.last_sync_duration_ms != null && ` · ${state.last_sync_duration_ms}ms`}
+                          {state.last_sync_duration_ms !== null && ` · ${state.last_sync_duration_ms}ms`}
                         </span>
                       ) : (
                         '未同步'
