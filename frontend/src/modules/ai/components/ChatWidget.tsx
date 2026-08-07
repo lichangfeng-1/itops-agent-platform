@@ -36,7 +36,7 @@ export default function ChatWidget() {
     queryFn: async () => {
       try {
         const { data } = await api.get('/copilot/suggestions');
-        return data || [];
+        return Array.isArray(data) ? data : [];
       } catch {
         return ['查看当前告警状态', '服务器状态怎么样', '最近执行了哪些任务'];
       }
@@ -48,7 +48,7 @@ export default function ChatWidget() {
     queryFn: async () => {
       try {
         const { data } = await api.get('/copilot/conversations');
-        return data || [];
+        return Array.isArray(data) ? data : [];
       } catch {
         return [];
       }

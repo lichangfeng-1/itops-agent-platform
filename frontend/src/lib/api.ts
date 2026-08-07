@@ -55,6 +55,8 @@ api.interceptors.response.use(
   (response) => {
     // 统一提取 response.data.data（后端返回 { success, data, message } 结构）
     if (response.data && typeof response.data.success === 'boolean') {
+      // success=false 时（如 404 NOT_FOUND），data 字段可能不存在
+      // 此时设为 undefined，让调用方的 `|| []` 兜底生效
       response.data = response.data.data;
     }
     return response;
