@@ -195,3 +195,10 @@ export { configFileTemplateRepository } from './configFileTemplateRepository';
 export type { ConfigFileTemplate } from './configFileTemplateRepository';
 
 export { maintenanceRepository } from './maintenanceRepository';
+
+export { cmdbSyncRepository, cmdbSyncStateRepo, cmdbSyncLogRepo } from './cmdbSyncRepository';
+export type {
+  CmdbSyncState,
+  CmdbSyncLog,
+  CmdbSyncLogInput,
+} from './cmdbSyncRepository';

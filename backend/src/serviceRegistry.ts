@@ -48,6 +48,7 @@ import { snmpPollingService } from './modules/network/services/snmpPollingServic
 import { snmpTrapService } from './modules/network/services/snmpTrapService';
 import { alertAutoAnalyzer } from './modules/alerts/services/alertAutoAnalyzer';
 import { alertCorrelationService } from './modules/alerts/services/alertCorrelationService';
+import { itopSyncService } from './modules/cmdb-sync/services/itopSyncService';
 import { alertAutoResponseService } from './modules/alerts/services/alertAutoResponse/alertAutoResponseService';
 import { alertProcessor } from './modules/alerts/services/AlertProcessor';
 import { knowledgeEngine } from './modules/ai/services/KnowledgeEngine';
@@ -287,6 +288,25 @@ export function registerAllServices(): void {
       shutdown: () => {
         /* stop handled elsewhere */
       },
+    },
+  );
+
+  // === CMDB 同步服务 ===
+  container.register(
+    'itopSyncService',
+    () => {
+      // 只有在配置启用时才自动启动
+      const enabled = settingsRepository.getValue('ITOP_SYNC_ENABLED') === 'true';
+      if (enabled) {
+        itopSyncService.startSync();
+      } else {
+        logger.info('[itopSyncService] CMDB 同步未启用（ITOP_SYNC_ENABLED != true）');
+      }
+      return itopSyncService;
+    },
+    [],
+    {
+      shutdown: () => itopSyncService.stopSync(),
     },
   );
 
