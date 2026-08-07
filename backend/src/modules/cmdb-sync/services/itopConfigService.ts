@@ -107,7 +107,7 @@ export const itopConfigService = {
     authToken?: string;
   }): Promise<ITopTestResult> {
     // 如果传入了覆盖配置，用覆盖值测试；否则用已存储配置
-    if (overrideConfig && overrideConfig.apiBase && overrideConfig.authToken) {
+    if (overrideConfig?.apiBase && overrideConfig?.authToken) {
       const config: ITopClientConfig = {
         apiUrl: overrideConfig.apiBase,
         authUser: overrideConfig.authUser ?? 'admin',
@@ -127,7 +127,9 @@ export const itopConfigService = {
     }
 
     // 用已存储的配置测试
-    if (!itopClient.isConfigured()) {
+    const apiUrl = settingsRepository.getValue('ITOP_API_BASE');
+    const authPwd = credentialService.getCredential('itop');
+    if (!apiUrl || !authPwd) {
       return {
         success: false,
         message: 'iTop 未配置：请先设置 API 地址和认证信息',
@@ -136,9 +138,9 @@ export const itopConfigService = {
 
     const start = Date.now();
     const result = await itopClient.testWithConfig({
-      apiUrl: settingsRepository.getValue('ITOP_API_BASE')!,
+      apiUrl,
       authUser: settingsRepository.getValue('ITOP_AUTH_USER') ?? 'admin',
-      authPwd: credentialService.getCredential('itop')!,
+      authPwd,
     });
     const latencyMs = Date.now() - start;
 

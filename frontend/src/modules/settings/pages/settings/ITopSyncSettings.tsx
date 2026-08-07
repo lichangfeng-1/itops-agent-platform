@@ -11,7 +11,7 @@
  * 后端端点: /api/v1/cmdb-sync/*
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   Database, Loader2, CheckCircle2, AlertCircle, Wifi, RefreshCw,
@@ -103,15 +103,19 @@ export default function ITopSyncSettings() {
   const [testMessage, setTestMessage] = useState('');
   const [syncMessage, setSyncMessage] = useState('');
 
-  // --- 加载配置 ---
-  useQuery({
+  // --- 加载配置（queryFn 只负责取数，setState 通过 useEffect 同步，避免覆盖用户输入）---
+  const { data: remoteConfig } = useQuery<ITopConfig>({
     queryKey: ['itopConfig'],
     queryFn: async () => {
       const { data } = await api.get('/cmdb-sync/config');
-      if (data) setConfig(data as ITopConfig);
-      return data;
+      return data as ITopConfig;
     },
   });
+
+  // 远端配置到达后，同步到本地表单 state（仅首次加载或远端变更时触发）
+  useEffect(() => {
+    if (remoteConfig) setConfig(remoteConfig);
+  }, [remoteConfig]);
 
   // --- 加载同步状态 ---
   const { data: syncStatus, refetch: refetchStatus } = useQuery<SyncStatus>({

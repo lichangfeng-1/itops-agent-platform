@@ -6,7 +6,9 @@
  */
 
 import { Router, type Request, type Response } from 'express';
+import { z } from 'zod';
 import { requireRole } from '../../../middleware/auth';
+import { validateQuery } from '../../../middleware/validation';
 import { getErrorMessage } from '../../../utils/errorHelpers';
 import { logger } from '../../../utils/logger';
 import { cmdbSyncStateRepo, cmdbSyncLogRepo } from '../../../repositories';
@@ -39,7 +41,14 @@ router.get('/status', (_req: Request, res: Response) => {
 });
 
 // GET /cmdb-sync/logs — 查看同步日志
-router.get('/logs', (req: Request, res: Response) => {
+const logsQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(500).optional(),
+  ci_type: z.string().max(64).optional(),
+  direction: z.enum(['pull', 'push']).optional(),
+  batch_id: z.string().max(64).optional(),
+});
+
+router.get('/logs', validateQuery(logsQuerySchema), (req: Request, res: Response) => {
   try {
     const limit = req.query.limit ? parseInt(String(req.query.limit), 10) : 50;
     const ciType = req.query.ci_type as string | undefined;
