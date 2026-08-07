@@ -13,6 +13,9 @@
  * 由 itopSyncService 决定事务边界，保证「数据写入 + idMap 更新」原子性。
  */
 
+/* eslint-disable no-restricted-imports -- cmdb-sync 专属写入层：需要直接执行同步专用 SQL
+   （servers/network_devices 的现有 repo create 方法字段集与 iTop 同步需求不匹配，
+    强行复用会导致字段错配。详见本文件头注释）*/
 import db from '../../../models/database';
 import { roomsRepo, racksRepo, pdusRepo } from '../../../repositories';
 import type { DcRackCreateInput } from '../../../repositories/dcRepository/types';

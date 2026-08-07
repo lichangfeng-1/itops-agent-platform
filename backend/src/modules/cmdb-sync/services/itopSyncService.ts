@@ -13,6 +13,8 @@
  */
 
 import { randomUUID } from 'crypto';
+/* eslint-disable no-restricted-imports -- 需要 db.transaction() 包裹同步事务，
+   保证「数据写入 + idMap 更新」原子性（better-sqlite3 的事务 API 必须直接持有 db 实例）*/
 import db from '../../../models/database';
 import { logger } from '../../../utils/logger';
 import { cmdbSyncStateRepo, cmdbSyncLogRepo } from '../../../repositories';
