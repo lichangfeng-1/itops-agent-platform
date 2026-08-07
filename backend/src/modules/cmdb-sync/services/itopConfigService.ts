@@ -137,10 +137,13 @@ export const itopConfigService = {
     }
 
     const start = Date.now();
+    const timeoutStr = settingsRepository.getValue('ITOP_TIMEOUT_MS');
+    const timeoutMs = timeoutStr ? parseInt(timeoutStr, 10) : 30000;
     const result = await itopClient.testWithConfig({
       apiUrl,
       authUser: settingsRepository.getValue('ITOP_AUTH_USER') ?? 'admin',
       authPwd,
+      timeoutMs,
     });
     const latencyMs = Date.now() - start;
 

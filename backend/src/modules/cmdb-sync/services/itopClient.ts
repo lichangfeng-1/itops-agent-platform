@@ -143,8 +143,9 @@ class ITopClient {
       });
 
       // iTop 返回的 body 可能是 JSON 或 HTML 错误页
-      const rawBody =
-        typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
+      // 统一规整为字符串用于 HTML 检测，再决定是 JSON.parse 还是直接用对象
+      const rawIsString = typeof response.data === 'string';
+      const rawBody = rawIsString ? (response.data as string) : JSON.stringify(response.data);
 
       // 检查是否是 HTML（登录失败/服务器错误）
       if (rawBody.trimStart().startsWith('<')) {
@@ -154,14 +155,16 @@ class ITopClient {
         return { success: false, error: errorMsg };
       }
 
-      const body = typeof response.data === 'string' ? JSON.parse(rawBody) : response.data;
+      // 先按 envelope 形状解析（用于检测 iTop 业务错误码 code/message），再交给调用方按 T 使用
+      const body: T = rawIsString ? (JSON.parse(rawBody) as T) : (response.data as T);
+      const envelope = body as unknown as { code?: number; message?: string };
 
       // iTop REST API code=0 表示成功，非 0 表示业务错误
-      if (body.code !== undefined && body.code !== 0) {
-        return { success: false, error: `iTop 错误 [code=${body.code}]: ${body.message}` };
+      if (envelope.code !== undefined && envelope.code !== 0) {
+        return { success: false, error: `iTop 错误 [code=${envelope.code}]: ${envelope.message}` };
       }
 
-      return { success: true, data: body as T };
+      return { success: true, data: body };
     } catch (error) {
       const axiosError = error as AxiosError;
       if (axiosError.code === 'ECONNABORTED') {
