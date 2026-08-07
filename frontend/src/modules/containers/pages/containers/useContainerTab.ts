@@ -48,7 +48,7 @@ export function useContainerTab(endpointId: string) {
           endpointId: endpointId !== 'local' ? endpointId : undefined,
         },
       });
-      return { data: (data?.data || data || []) as ContainerItem[], total: (data?.total ?? 0) as number };
+      return { data: (Array.isArray(data?.items) ? data.items : Array.isArray(data) ? data : []) as ContainerItem[], total: (data?.total ?? 0) as number };
     },
   });
 
