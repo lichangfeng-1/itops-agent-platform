@@ -12,6 +12,7 @@
  */
 
 import axios, { type AxiosError } from 'axios';
+import https from 'https';
 import { logger } from '../../../utils/logger';
 import { settingsRepository } from '../../../repositories';
 import { credentialService } from '../../auth/services/credentialService';
@@ -47,6 +48,7 @@ export interface ITopClientConfig {
   authUser: string;
   authPwd: string; // 密码或 token
   timeoutMs?: number;
+  sslVerify?: boolean; // 是否校验 SSL 证书(企业内部 CA 通常需关闭)
 }
 
 // ============================================================
@@ -72,12 +74,14 @@ class ITopClient {
     const authToken = credentialService.getCredential('itop');
     const timeoutStr = settingsRepository.getValue('ITOP_TIMEOUT_MS');
     const timeoutMs = timeoutStr ? parseInt(timeoutStr, 10) : DEFAULT_TIMEOUT_MS;
+    // 企业内网常用自签名/内部 CA 证书，默认关闭校验（可通过 ITOP_SSL_VERIFY=true 开启）
+    const sslVerify = settingsRepository.getValue('ITOP_SSL_VERIFY') === 'true';
 
     if (!authToken) {
       return null;
     }
 
-    return { apiUrl, authUser, authPwd: authToken, timeoutMs };
+    return { apiUrl, authUser, authPwd: authToken, timeoutMs, sslVerify };
   }
 
   /**
@@ -140,6 +144,10 @@ class ITopClient {
         timeout: config.timeoutMs ?? DEFAULT_TIMEOUT_MS,
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         validateStatus: () => true, // 不在非 2xx 时抛异常
+        // 企业内网 iTop 常用自签名/内部 CA 证书，sslVerify=false 时跳过证书校验
+        httpsAgent: config.sslVerify === false
+          ? new https.Agent({ rejectUnauthorized: false })
+          : undefined,
       });
 
       // iTop 返回的 body 可能是 JSON 或 HTML 错误页

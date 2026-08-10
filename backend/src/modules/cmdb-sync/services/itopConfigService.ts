@@ -20,6 +20,7 @@ export interface ITopConfigOutput {
   syncEnabled: boolean;
   syncIntervalMinutes: number;
   timeoutMs: number;
+  sslVerify: boolean; // 是否校验 SSL 证书
   tokenConfigured: boolean; // 是否已配置认证信息（不返回明文）
 }
 
@@ -30,6 +31,7 @@ export interface ITopConfigInput {
   syncEnabled?: boolean;
   syncIntervalMinutes?: number;
   timeoutMs?: number;
+  sslVerify?: boolean;
 }
 
 export interface ITopTestResult {
@@ -52,6 +54,7 @@ export const itopConfigService = {
     const syncEnabledStr = settingsRepository.getValue('ITOP_SYNC_ENABLED');
     const syncIntervalStr = settingsRepository.getValue('ITOP_SYNC_INTERVAL_MINUTES');
     const timeoutStr = settingsRepository.getValue('ITOP_TIMEOUT_MS');
+    const sslVerifyStr = settingsRepository.getValue('ITOP_SSL_VERIFY');
     const token = credentialService.getCredential('itop');
 
     return {
@@ -60,6 +63,8 @@ export const itopConfigService = {
       syncEnabled: syncEnabledStr === 'true',
       syncIntervalMinutes: syncIntervalStr ? parseInt(syncIntervalStr, 10) : 30,
       timeoutMs: timeoutStr ? parseInt(timeoutStr, 10) : 30000,
+      // 默认 false:企业内网 iTop 常用自签名/内部 CA,默认不校验更易接入
+      sslVerify: sslVerifyStr !== null && sslVerifyStr === 'true',
       tokenConfigured: !!token,
     };
   },
@@ -85,6 +90,9 @@ export const itopConfigService = {
     if (input.timeoutMs !== undefined) {
       updates.ITOP_TIMEOUT_MS = String(input.timeoutMs);
     }
+    if (input.sslVerify !== undefined) {
+      updates.ITOP_SSL_VERIFY = input.sslVerify ? 'true' : 'false';
+    }
 
     if (Object.keys(updates).length > 0) {
       settingsRepository.upsertMany(updates);
@@ -105,6 +113,7 @@ export const itopConfigService = {
     apiBase?: string;
     authUser?: string;
     authToken?: string;
+    sslVerify?: boolean;
   }): Promise<ITopTestResult> {
     // 如果传入了覆盖配置，用覆盖值测试；否则用已存储配置
     if (overrideConfig?.apiBase && overrideConfig?.authToken) {
@@ -112,6 +121,7 @@ export const itopConfigService = {
         apiUrl: overrideConfig.apiBase,
         authUser: overrideConfig.authUser ?? 'admin',
         authPwd: overrideConfig.authToken,
+        sslVerify: overrideConfig.sslVerify ?? false,
       };
       const start = Date.now();
       const result = await itopClient.testWithConfig(config);
@@ -139,11 +149,13 @@ export const itopConfigService = {
     const start = Date.now();
     const timeoutStr = settingsRepository.getValue('ITOP_TIMEOUT_MS');
     const timeoutMs = timeoutStr ? parseInt(timeoutStr, 10) : 30000;
+    const sslVerify = settingsRepository.getValue('ITOP_SSL_VERIFY') === 'true';
     const result = await itopClient.testWithConfig({
       apiUrl,
       authUser: settingsRepository.getValue('ITOP_AUTH_USER') ?? 'admin',
       authPwd,
       timeoutMs,
+      sslVerify,
     });
     const latencyMs = Date.now() - start;
 

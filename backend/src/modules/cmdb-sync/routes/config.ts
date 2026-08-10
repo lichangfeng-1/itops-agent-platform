@@ -23,6 +23,7 @@ const saveConfigSchema = z.object({
   syncEnabled: z.boolean().optional(),
   syncIntervalMinutes: z.number().int().min(1).max(1440).optional(),
   timeoutMs: z.number().int().min(1000).max(300000).optional(),
+  sslVerify: z.boolean().optional(),
 });
 
 // POST /cmdb-sync/config/test 入参校验（全部可选，允许用已存配置测试）
@@ -30,6 +31,7 @@ const testConnectionSchema = z.object({
   apiBase: z.string().optional(),
   authUser: z.string().optional(),
   authToken: z.string().optional(),
+  sslVerify: z.boolean().optional(),
 });
 
 // GET /cmdb-sync/config — 获取当前 iTop 配置

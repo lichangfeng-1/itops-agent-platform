@@ -20,6 +20,7 @@ import {
 import clsx from 'clsx';
 import api from '../../../../lib/api';
 import { getAxiosErrorMessage } from '../../../../lib/errorHandler';
+import SyncLogTable, { type SyncLog } from './SyncLogTable';
 
 // ============================================================
 // 类型
@@ -31,6 +32,7 @@ interface ITopConfig {
   syncEnabled: boolean;
   syncIntervalMinutes: number;
   timeoutMs: number;
+  sslVerify: boolean;
   tokenConfigured: boolean;
 }
 
@@ -47,18 +49,6 @@ interface SyncStateEntry {
 interface SyncStatus {
   states: SyncStateEntry[];
   syncing: boolean;
-}
-
-interface SyncLog {
-  id: string;
-  timestamp: string;
-  direction: string;
-  ci_type: string;
-  action: string;
-  itop_id: string | null;
-  platform_table: string | null;
-  success: number;
-  message: string | null;
 }
 
 interface SyncResult {
@@ -79,6 +69,7 @@ const initialConfig: ITopConfig = {
   syncEnabled: false,
   syncIntervalMinutes: 30,
   timeoutMs: 30000,
+  sslVerify: false,
   tokenConfigured: false,
 };
 
@@ -146,6 +137,7 @@ export default function ITopSyncSettings() {
         syncEnabled: config.syncEnabled,
         syncIntervalMinutes: config.syncIntervalMinutes,
         timeoutMs: config.timeoutMs,
+        sslVerify: config.sslVerify,
       };
       if (authToken) payload.authToken = authToken;
       const { data } = await api.put('/cmdb-sync/config', payload);
@@ -173,6 +165,7 @@ export default function ITopSyncSettings() {
       if (config.apiBase) payload.apiBase = config.apiBase;
       if (config.authUser) payload.authUser = config.authUser;
       if (authToken) payload.authToken = authToken;
+      payload.sslVerify = config.sslVerify;
       const { data } = await api.post('/cmdb-sync/config/test', payload);
       return data;
     },
@@ -342,6 +335,52 @@ export default function ITopSyncSettings() {
           </div>
         </div>
 
+        {/* SSL 校验 + 超时 */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-text-primary mb-1.5">
+              SSL 证书校验
+            </label>
+            <div className="flex items-center gap-3 py-2">
+              <button
+                type="button"
+                onClick={() => setConfig({ ...config, sslVerify: !config.sslVerify })}
+                className={clsx(
+                  'relative inline-flex h-6 w-11 items-center rounded-full transition-colors',
+                  config.sslVerify ? 'bg-primary' : 'bg-border',
+                )}
+              >
+                <span
+                  className={clsx(
+                    'inline-block h-4 w-4 transform rounded-full bg-white transition-transform',
+                    config.sslVerify ? 'translate-x-6' : 'translate-x-1',
+                  )}
+                />
+              </button>
+              <span className="text-sm text-text-secondary">
+                {config.sslVerify ? '严格校验' : '不校验（内网自签名）'}
+              </span>
+            </div>
+            <p className="text-xs text-text-tertiary mt-1">
+              iTop 使用内部 CA/自签名证书时需关闭(默认)
+            </p>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-text-primary mb-1.5">
+              请求超时（毫秒）
+            </label>
+            <input
+              type="number"
+              min={1000}
+              max={300000}
+              value={config.timeoutMs}
+              onChange={(e) => setConfig({ ...config, timeoutMs: parseInt(e.target.value) || 30000 })}
+              className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-sm text-text-primary focus:outline-none focus:ring-2 focus:ring-primary/40"
+            />
+          </div>
+        </div>
+
         {/* 操作按钮 */}
         <div className="flex items-center justify-between pt-4 border-t border-border">
           {/* 测试连接 */}
@@ -490,64 +529,7 @@ export default function ITopSyncSettings() {
       </div>
 
       {/* === 同步日志 === */}
-      <div className="bg-surface rounded-xl border border-border overflow-hidden">
-        <div className="px-5 py-3 border-b border-border">
-          <h4 className="text-sm font-semibold text-text-primary">最近同步日志</h4>
-        </div>
-        <div className="max-h-64 overflow-auto">
-          {(!syncLogs || syncLogs.length === 0) ? (
-            <div className="px-5 py-6 text-center text-sm text-text-tertiary">暂无日志</div>
-          ) : (
-            <table className="w-full text-xs">
-              <thead className="bg-background text-text-tertiary">
-                <tr>
-                  <th className="text-left px-4 py-2 font-medium">时间</th>
-                  <th className="text-left px-4 py-2 font-medium">类型</th>
-                  <th className="text-left px-4 py-2 font-medium">操作</th>
-                  <th className="text-left px-4 py-2 font-medium">结果</th>
-                  <th className="text-left px-4 py-2 font-medium">详情</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {syncLogs.map((log) => (
-                  <tr key={log.id} className="hover:bg-background">
-                    <td className="px-4 py-2 text-text-secondary whitespace-nowrap">
-                      {new Date(log.timestamp).toLocaleString('zh-CN')}
-                    </td>
-                    <td className="px-4 py-2 text-text-secondary">{log.ci_type}</td>
-                    <td className="px-4 py-2">
-                      <span
-                        className={clsx(
-                          'inline-block px-1.5 py-0.5 rounded text-xs font-medium',
-                          log.action === 'create'
-                            ? 'bg-status-success/10 text-status-success'
-                            : log.action === 'update'
-                              ? 'bg-primary/10 text-primary'
-                              : log.action === 'error'
-                                ? 'bg-status-failed/10 text-status-failed'
-                                : 'bg-background text-text-tertiary',
-                        )}
-                      >
-                        {log.action}
-                      </span>
-                    </td>
-                    <td className="px-4 py-2">
-                      {log.success ? (
-                        <CheckCircle2 className="w-3.5 h-3.5 text-status-success" />
-                      ) : (
-                        <AlertCircle className="w-3.5 h-3.5 text-status-failed" />
-                      )}
-                    </td>
-                    <td className="px-4 py-2 text-text-secondary max-w-xs truncate">
-                      {log.message ?? `${log.platform_table ?? ''}`}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
-      </div>
+      <SyncLogTable logs={syncLogs} />
     </div>
   );
 }
