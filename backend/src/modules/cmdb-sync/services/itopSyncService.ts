@@ -42,9 +42,9 @@ export interface SyncResult {
 
 interface ITopServer {
   name: string;
-  ipaddress?: string;
-  ipaddress_2?: string;
-  osfamily?: string;
+  managementip_name?: string;
+  svrbizip_name?: string;
+  osfamily_name?: string;
 }
 interface ITopRack {
   name: string;
@@ -54,7 +54,6 @@ interface ITopRack {
 }
 interface ITopLocation {
   name: string;
-  description?: string;
   address?: string;
   country?: string;
   city?: string;
@@ -62,8 +61,7 @@ interface ITopLocation {
 interface ITopDatacenterDevice {
   name: string;
   description?: string;
-  ipaddress?: string;
-  ipaddress_2?: string;
+  managementip_name?: string;
   finalclass?: string;
 }
 
@@ -237,9 +235,12 @@ async function syncCIs<TFields>(
 const locationStrategy: SyncStrategy<ITopLocation> = {
   ciType: 'Location',
   oql: 'SELECT Location',
-  outputFields: 'name, description, address, country, city, status',
+  outputFields: 'name, address, country, city, status',
   upsert: (fields, { existingId }) => ({
-    platformId: upsertRoom(existingId, { name: fields.name, description: fields.description }),
+    platformId: upsertRoom(existingId, {
+      name: fields.name,
+      description: [fields.address, fields.city, fields.country].filter(Boolean).join(', ') || undefined,
+    }),
     action: existingId ? 'update' : 'create',
     table: 'dc_rooms',
   }),
@@ -248,7 +249,7 @@ const locationStrategy: SyncStrategy<ITopLocation> = {
 const rackStrategy: SyncStrategy<ITopRack> = {
   ciType: 'Rack',
   oql: 'SELECT Rack',
-  outputFields: 'name, description, nb_u, rack_unit_pos, organization_name, location_name, status',
+  outputFields: 'name, nb_u, organization_name, location_name, status',
   upsert: (fields, { existingId }) => {
     // 查找关联的机房：优先在已同步的 idMap 里按 location_name 找，找不到再查库
     const roomId = fields.location_name ? findRoomIdByName(fields.location_name) : null;
@@ -260,7 +261,7 @@ const rackStrategy: SyncStrategy<ITopRack> = {
 const serverStrategy: SyncStrategy<ITopServer> = {
   ciType: 'Server',
   oql: 'SELECT Server',
-  outputFields: 'name, ipaddress, ipaddress_2, osfamily, organization_name, status, serial_number',
+  outputFields: 'name, managementip_name, svrbizip_name, osfamily_name, organization_name, status, serialnumber',
   upsert: (fields, { existingId }) => {
     const res = upsertServer(existingId, fields);
     return { platformId: res.id, action: res.action, table: 'servers', message: res.message };
@@ -270,7 +271,7 @@ const serverStrategy: SyncStrategy<ITopServer> = {
 const datacenterDeviceStrategy: SyncStrategy<ITopDatacenterDevice> = {
   ciType: 'DatacenterDevice',
   oql: 'SELECT DatacenterDevice',
-  outputFields: 'name, description, ipaddress, ipaddress_2, finalclass, organization_name, serial_number',
+  outputFields: 'name, description, managementip_name, finalclass, organization_name, serialnumber',
   upsert: (fields, { existingId }) => {
     const res = upsertDatacenterDevice(existingId, fields);
     return { platformId: res.id, action: res.action, table: res.table, message: res.message };

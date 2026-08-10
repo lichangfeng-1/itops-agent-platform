@@ -98,24 +98,29 @@ export interface ServerUpsertResult {
  * 注意：servers.ip_address 在 v001 schema 中并无 UNIQUE 约束
  * （只有 network_devices.ip_address 和 credentials 表的 ip_address 是 UNIQUE）。
  * 因此这里不再做 IP 冲突预检——直接写入即可。
+ *
+ * iTop 字段映射：
+ *   managementip_name → ip_address（管理 IP，优先）
+ *   svrbizip_name     → 备用（业务 IP，managementip 为空时用）
+ *   osfamily_name     → os
  */
 export function upsertServer(
   existingId: string | undefined,
   fields: {
     name: string;
-    ipaddress?: string;
-    ipaddress_2?: string;
-    osfamily?: string;
+    managementip_name?: string;
+    svrbizip_name?: string;
+    osfamily_name?: string;
   },
 ): ServerUpsertResult {
-  const ip = fields.ipaddress || fields.ipaddress_2 || '';
+  const ip = fields.managementip_name || fields.svrbizip_name || '';
 
   if (existingId) {
     db.prepare(`
       UPDATE servers
       SET name = ?, os = ?, hostname = COALESCE(NULLIF(?, ''), hostname), ip_address = ?, updated_at = datetime('now','localtime')
       WHERE id = ?
-    `).run(fields.name, fields.osfamily ?? '', ip, ip || null, existingId);
+    `).run(fields.name, fields.osfamily_name ?? '', ip, ip || null, existingId);
     return { id: existingId, action: 'update' };
   }
 
@@ -123,7 +128,7 @@ export function upsertServer(
   db.prepare(`
     INSERT INTO servers (id, name, hostname, port, username, password, use_ssh_key, os, os_type, ip_address, enabled, tags, created_at, updated_at)
     VALUES (?, ?, ?, 22, '', NULL, 0, ?, 'linux', ?, 1, '[]', datetime('now','localtime'), datetime('now','localtime'))
-  `).run(newId, fields.name, ip || fields.name, fields.osfamily ?? '', ip || null);
+  `).run(newId, fields.name, ip || fields.name, fields.osfamily_name ?? '', ip || null);
 
   return {
     id: newId,
@@ -147,18 +152,21 @@ export interface DeviceUpsertResult {
  * 根据 finalclass 分流：
  *   pdu / ups 类 → dc_pdus
  *   其他（switch / router / firewall 等）→ network_devices（要求唯一 IP）
+ *
+ * iTop 字段映射：
+ *   managementip_name → ip_address（管理 IP）
+ *   finalclass        → 设备类型判断（NetworkDevice / PDU / UPS ...）
  */
 export function upsertDatacenterDevice(
   existingId: string | undefined,
   fields: {
     name: string;
     description?: string;
-    ipaddress?: string;
-    ipaddress_2?: string;
+    managementip_name?: string;
     finalclass?: string;
   },
 ): DeviceUpsertResult {
-  const ip = fields.ipaddress || fields.ipaddress_2 || '';
+  const ip = fields.managementip_name || '';
   const finalClass = (fields.finalclass ?? '').toLowerCase();
   const isPDU = finalClass.includes('pdu') || finalClass.includes('ups');
 
