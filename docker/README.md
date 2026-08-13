@@ -153,6 +153,36 @@ docker build -f docker/Dockerfile.frontend -t itops-frontend:latest .
 docker-compose up -d --build
 ```
 
+### Building in enterprise / intranet environments
+
+The Dockerfiles accept build args so the build works behind a corporate proxy or
+in air-gapped intranets where `mirrors.aliyun.com` / `registry.npmmirror.com` are
+unreachable:
+
+```bash
+# Option A: keep official Debian & npm sources, route traffic through a proxy
+docker build --network host \
+    --build-arg APT_MIRROR= \
+    --build-arg NPM_REGISTRY= \
+    --build-arg HTTP_PROXY=http://10.0.0.1:8080 \
+    --build-arg HTTPS_PROXY=http://10.0.0.1:8080 \
+    -f docker/Dockerfile.backend -t itops-backend:latest .
+
+# Option B: use a different mirror (e.g. a self-hosted Nexus/Artifactory)
+docker build \
+    --build-arg APT_MIRROR=mirrors.my-company.com \
+    --build-arg NPM_REGISTRY=https://npm.my-company.com \
+    -f docker/Dockerfile.backend -t itops-backend:latest .
+```
+
+| Build arg | Default | Purpose |
+|-----------|---------|---------|
+| `APT_MIRROR` | `mirrors.aliyun.com` | Debian apt mirror; set empty to keep official sources |
+| `NPM_REGISTRY` | `https://registry.npmmirror.com` | npm registry; set empty to keep `registry.npmjs.org` |
+| `HTTP_PROXY` / `HTTPS_PROXY` | *(empty)* | HTTP(S) proxy for apt & npm during build (cleared in final image) |
+| `NO_PROXY` | `localhost,127.0.0.1` | Proxy bypass list |
+
+
 ## 🎯 Usage
 
 1. Access the frontend at `http://localhost:8080`
