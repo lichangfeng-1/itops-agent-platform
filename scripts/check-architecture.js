@@ -3,14 +3,14 @@
  *
  * 验证以下架构约束：
  * 1. modules/ 下禁止直接 import models/database（必须通过 Repository）
- * 2. 24 个后端模块 / 23 个前端模块结构完整性
+ * 2. 25 个后端模块 / 23 个前端模块结构完整性
  * 3. core/ 不得依赖 modules/
  * 4. modules 之间禁止跨模块 routes/ 依赖
  *
  * 用法：node scripts/check-architecture.js [backend|frontend|all]
  *
  * v2.5（2026-07-21，ADR-020 v2.4 触发）：
- *   - 后端 24 模块、前端 23 模块（去掉 linkage，按 frontend.md §注）
+ *   - 后端 25 模块、前端 23 模块（去掉 linkage，按 frontend.md §注）
  *   - 之前用同一份 EXPECTED_MODULES 检查前后端，会假报前端缺 linkage
  */
 
@@ -23,7 +23,7 @@ const FRONTEND_SRC = path.join(ROOT, 'frontend', 'src');
 
 // ─── 常量 ────────────────────────────────────────────
 
-// 后端 24 个模块（P1-6 后）
+// 后端 25 个模块（P1-6 后）
 const BACKEND_MODULES = [
   'ai',
   'alerts',
@@ -32,6 +32,7 @@ const BACKEND_MODULES = [
   'auto',
   'backup',
   'change-management',
+  'cmdb-sync',
   'config-management',
   'containers',
   'database',
@@ -157,7 +158,7 @@ function checkBackend() {
   }
   logIssues('直接 import db（无 eslint-disable）', dbImportViolations);
 
-  // 2. 24 模块结构完整性
+  // 2. 25 模块结构完整性
   console.log('\n  2️⃣ 模块结构完整性 ...');
   const existingModules = fs.readdirSync(modulesDir).filter((d) => {
     const stat = fs.statSync(path.join(modulesDir, d));
@@ -177,7 +178,7 @@ function checkBackend() {
     warnings += extraModules.length;
   }
   if (missingModules.length === 0 && extraModules.length === 0) {
-    console.log(`  ✅ 24 个模块全部存在`);
+    console.log(`  ✅ 25 个模块全部存在`);
   }
 
   // 3. 模块必需文件检查

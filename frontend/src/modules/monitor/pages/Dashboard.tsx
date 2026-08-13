@@ -105,7 +105,7 @@ export default function Dashboard() {
       // 2026-07-23 P1：失败时记录日志，避免完全无提示（react-query V5 在 queryFn 内 try/catch 是推荐方式）
       try {
         const { data } = await api.get('/agents');
-        return (data || []) as Agent[];
+        return Array.isArray(data) ? data : [];
       } catch (err) {
         logger.error('Dashboard: GET /agents failed', err);
         return [];
@@ -119,7 +119,7 @@ export default function Dashboard() {
     queryFn: async () => {
       try {
         const { data } = await api.get('/servers');
-        return (data || []) as Server[];
+        return Array.isArray(data) ? data : [];
       } catch (err) {
         logger.error('Dashboard: GET /servers failed', err);
         return [];
@@ -133,7 +133,7 @@ export default function Dashboard() {
     queryFn: async () => {
       try {
         const { data } = await api.get('/workflows');
-        return (data || []) as Workflow[];
+        return Array.isArray(data) ? data : [];
       } catch (err) {
         logger.error('Dashboard: GET /workflows failed', err);
         return [];
@@ -147,7 +147,7 @@ export default function Dashboard() {
     queryFn: async () => {
       try {
         const { data } = await api.get('/knowledge');
-        return (data || []) as Knowledge[];
+        return Array.isArray(data) ? data : [];
       } catch (err) {
         logger.error('Dashboard: GET /knowledge failed', err);
         return [];
@@ -161,7 +161,7 @@ export default function Dashboard() {
     queryFn: async () => {
       try {
         const { data } = await api.get('/tasks', { params: { limit: 5 } });
-        return (data || []) as Task[];
+        return Array.isArray(data) ? data : [];
       } catch (err) {
         logger.error('Dashboard: GET /tasks failed', err);
         return [];
@@ -175,7 +175,7 @@ export default function Dashboard() {
     queryFn: async () => {
       try {
         const { data } = await api.get('/alerts', { params: { limit: 5 } });
-        return (data || []) as Alert[];
+        return Array.isArray(data) ? data : [];
       } catch (err) {
         logger.error('Dashboard: GET /alerts failed', err);
         return [];
@@ -310,7 +310,7 @@ export default function Dashboard() {
                 </Link>
               </div>
               <div className="space-y-2">
-                {alerts?.slice(0, 6).map((alert) => (
+                {(Array.isArray(alerts) ? alerts : []).slice(0, 6).map((alert) => (
                   <div
                     key={alert.id}
                     className="p-2.5 rounded-lg bg-background hover:bg-background/80 transition-all"
@@ -439,7 +439,7 @@ export default function Dashboard() {
               </Link>
             </div>
             <div className="space-y-2">
-              {agents?.slice(0, 5).map((agent) => (
+              {(Array.isArray(agents) ? agents : []).slice(0, 5).map((agent) => (
                 <div
                   key={agent.id}
                   className="flex items-center gap-2 p-2 rounded-lg bg-background hover:bg-background/80 transition-all"
@@ -474,7 +474,7 @@ export default function Dashboard() {
               </Link>
             </div>
             <div className="space-y-2">
-              {knowledge?.slice(0, 5).map((item) => (
+              {(Array.isArray(knowledge) ? knowledge : []).slice(0, 5).map((item) => (
                 <div
                   key={item.id}
                   className="flex items-start gap-2 p-2 rounded-lg bg-background hover:bg-background/80 transition-all"
@@ -522,7 +522,7 @@ export default function Dashboard() {
                   </tr>
                 </thead>
                 <tbody>
-                  {tasks?.map((task) => (
+                  {(Array.isArray(tasks) ? tasks : []).map((task) => (
                     <tr key={task.id} className="border-b border-border/50 hover:bg-background/50">
                       <td className="py-2 text-text-primary text-xs">{task.name}</td>
                       <td className="py-2">

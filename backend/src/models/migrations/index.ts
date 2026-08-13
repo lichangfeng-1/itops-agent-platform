@@ -116,6 +116,8 @@ import v058DcConstraints from './v058_dc_constraints';
 import v059DcPolymorphicFk from './v059_dc_polymorphic_fk';
 // === agent_executions 归档 v060 ===
 import v060AgentExecutionsArchive from './v060_agent_executions_archive';
+// === CMDB 同步表 v061 ===
+import v061CmdbSyncTables from './v061_cmdb_sync_tables';
 
 // Helper: wrap sync up/down into async
 function wrapAsync(fn: (db: any) => void): (db: any) => Promise<void> {
@@ -370,6 +372,8 @@ export const ALL_MIGRATIONS: Migration[] = [
   v059DcPolymorphicFk,
   // v060: agent_executions 归档表 + 复合索引
   v060AgentExecutionsArchive,
+  // v061: CMDB 同步状态与日志表
+  v061CmdbSyncTables,
 ];
 
 export function createMigrationManager(db: any): MigrationManager {

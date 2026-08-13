@@ -8,7 +8,7 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Bell, Database, Shield, Brain, BookOpen } from 'lucide-react';
+import { Bell, Database, Shield, Brain, BookOpen, Network } from 'lucide-react';
 import clsx from 'clsx';
 import ModelSettings from './settings/ModelSettings';
 import NotificationSettings from '../../notification/pages/NotificationSettings';
@@ -16,6 +16,7 @@ import BackupSettings from '../../backup/pages/BackupSettings';
 import SecuritySettings from './settings/SecuritySettings';
 import GeneralSettings from './settings/GeneralSettings';
 import QAnythingSettings from './settings/QAnythingSettings';
+import ITopSyncSettings from './settings/ITopSyncSettings';
 
 interface TabDef {
   id: string;
@@ -40,6 +41,7 @@ export default function Settings() {
     { id: 'qanything', name: t('dashboard.knowledge'), icon: BookOpen },
     { id: 'notifications', name: t('settings.monitoring'), icon: Bell },
     { id: 'database', name: t('settings.backup'), icon: Database },
+    { id: 'itop', name: 'iTop CMDB', icon: Network },
     { id: 'security', name: t('settings.security'), icon: Shield },
   ];
 
@@ -83,6 +85,7 @@ export default function Settings() {
               {activeTab === 'qanything' && <QAnythingSettings />}
               {activeTab === 'notifications' && <NotificationSettings />}
               {activeTab === 'database' && <BackupSettings />}
+              {activeTab === 'itop' && <ITopSyncSettings />}
               {activeTab === 'security' && (
                 <div className="space-y-6">
                   <div>

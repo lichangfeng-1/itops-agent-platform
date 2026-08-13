@@ -136,8 +136,12 @@ export default function Layout() {
   const { data: agentCount } = useQuery({
     queryKey: ['agents-count'],
     queryFn: async () => {
-      const { data } = await api.get('/agents');
-      return (data as Array<{ enabled: number }>).filter((a) => a.enabled === 1).length;
+      try {
+        const { data } = await api.get('/agents');
+        return Array.isArray(data) ? data.filter((a: { enabled: number }) => a.enabled === 1).length : 0;
+      } catch {
+        return 0;
+      }
     },
     refetchInterval: 60000,
     staleTime: 5 * 60 * 1000,
@@ -146,8 +150,12 @@ export default function Layout() {
   const { data: workflowCount } = useQuery({
     queryKey: ['workflows-count'],
     queryFn: async () => {
-      const { data } = await api.get('/workflows');
-      return (data as Array<{ is_template: number }>).filter((w) => w.is_template === 1).length;
+      try {
+        const { data } = await api.get('/workflows');
+        return Array.isArray(data) ? data.filter((w: { is_template: number }) => w.is_template === 1).length : 0;
+      } catch {
+        return 0;
+      }
     },
     refetchInterval: 60000,
     staleTime: 5 * 60 * 1000,

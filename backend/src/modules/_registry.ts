@@ -24,6 +24,7 @@ import containerRoutes from './containers/routes';
 import databaseRoutes from './database/routes';
 import dcRoutes from './dc/routes';
 import importExportRoutes from './import-export/routes';
+import cmdbSyncRoutes from './cmdb-sync/routes';
 import infraRoutes from './infra/routes';
 import kubernetesRoutes from './kubernetes/routes';
 import linkageRoutes from './linkage/routes';
@@ -66,6 +67,7 @@ const modules: ModuleConfig[] = [
   { path: '/api/v1', router: databaseRoutes },
   { path: '/api/v1', router: dcRoutes },
   { path: '/api/v1', router: importExportRoutes },
+  { path: '/api/v1', router: cmdbSyncRoutes },
   { path: '/api/v1', router: infraRoutes },
   { path: '/api/v1', router: kubernetesRoutes },
   { path: '/api/v1', router: linkageRoutes },
